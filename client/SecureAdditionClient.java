@@ -14,6 +14,7 @@ public class SecureAdditionClient {
 	static final String TRUSTSTORE = "LIUtruststore.ks";
 	static final String KEYSTOREPASS = "123456";
 	static final String TRUSTSTOREPASS = "abcdef";
+	static final String DOWNLOAD_COMPLETE_COMMAND = "cmd:download_complete";
 	BufferedReader socketIn;
 	PrintWriter socketOut;
 
@@ -23,10 +24,11 @@ public class SecureAdditionClient {
 	public SecureAdditionClient( InetAddress host, int port ) {
 		this.host = host;
 		this.port = port;
+		this.init();
 	}
 
   // The method used to start a client object
-	public void run() {
+	public void init() {
 		try {
 			KeyStore ks = KeyStore.getInstance( "JCEKS" );
 			ks.load( new FileInputStream( KEYSTORE ), KEYSTOREPASS.toCharArray() );
@@ -52,25 +54,21 @@ public class SecureAdditionClient {
 			socketIn = new BufferedReader( new InputStreamReader( client.getInputStream() ) );
 			socketOut = new PrintWriter( client.getOutputStream(), true );
 
-			//String numbers = "cmd:upload";
-			//System.out.println( ">>>> Sending the numbers " + numbers+ " to SecureAdditionServer" );
-			//socketOut.println( numbers );
-			//System.out.println( socketIn.readLine() );
-
-			//socketOut.println ( "" );
-			this.upload("C:\\Users\\odavi\\Documents\\KURSER.txt", "KURSER.txt");
-			socketOut.println("cmd:exit");
+			//this.upload("C:\\Users\\odavi\\Documents\\KURSER.txt", "KURSER.txt");
+			//this.download("KURSER.txt");
+			//this.delete("KURSER.txt");
+			//socketOut.println("cmd:exit");
 		}
 		catch( Exception x ) {
 			System.out.println( x );
 			x.printStackTrace();
 		}
 	}
-	public void upload(String filepath, String filename){
+	public void upload(String filepath){
 		try{
 			socketOut.println ( "cmd:upload" );
-			socketOut.println(filename);
 			File file = new File(filepath);
+			socketOut.println(file.getName());
 		  BufferedReader br = new BufferedReader(new FileReader(file));
 			String st;
 			while ((st = br.readLine()) != null)
@@ -86,25 +84,32 @@ public class SecureAdditionClient {
     	System.out.println(e);
 		}
 	}
-
-	// The test method for the class @param args Optional port number and host name
-	public static void main( String[] args ) {
-		try {
-			InetAddress host = InetAddress.getLocalHost();
-			int port = DEFAULT_PORT;
-			if ( args.length > 0 ) {
-				port = Integer.parseInt( args[0] );
+	public void download(String file){
+		try{
+			socketOut.println("cmd:download");
+			socketOut.println(file);
+			String str;
+			PrintWriter writer = new PrintWriter("downloads/" + file , "UTF-8");
+			while(!(str = socketIn.readLine()).equals(DOWNLOAD_COMPLETE_COMMAND)){
+				writer.println(str);
 			}
-			if ( args.length > 1 ) {
-				host = InetAddress.getByName( args[1] );
-			}
-			SecureAdditionClient addClient = new SecureAdditionClient( host, port );
-			addClient.run();
-
+			writer.close();
 		}
-		catch ( UnknownHostException uhx ) {
-			System.out.println( uhx );
-			uhx.printStackTrace();
+		catch(IOException e){
+	    	System.out.println(e);
 		}
+	}
+	public void	delete(String file){
+		try{
+			socketOut.println("cmd:delete");
+			socketOut.println(file);
+			System.out.println(">>>> " + socketIn.readLine());
+		}
+		catch(IOException e){
+			System.out.println(e);
+		}
+	}
+	public void terminate(){
+		socketOut.println("cmd:exit");
 	}
 }

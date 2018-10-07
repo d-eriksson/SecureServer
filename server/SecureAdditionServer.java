@@ -53,7 +53,7 @@ public class SecureAdditionServer {
 			SSLServerSocket sss = (SSLServerSocket) sslServerFactory.createServerSocket( port );
 			sss.setEnabledCipherSuites( sss.getSupportedCipherSuites() );
 
-			System.out.println("\n>>>> SecureAdditionServer: active ");
+			System.out.println("\n>>>> SecureAdditionServer: ACTIVE ");
 			SSLSocket incoming = (SSLSocket)sss.accept();
 
       in = new BufferedReader( new InputStreamReader( incoming.getInputStream() ) );
@@ -67,17 +67,18 @@ public class SecureAdditionServer {
 								handleUpload();
 								break;
 						case DOWNLOAD_COMMAND:
-								//sendToClient();
 								System.out.println("\n>>>> SecureAdditionServer: DOWNLOAD_COMMAND ");
+								handleDownload();
 								break;
 						case DELETE_COMMAND:
-								//delete();
+								handleDelete();
 								System.out.println("\n>>>> SecureAdditionServer: DELETE_COMMAND ");
 								break;
 						default:
 								break;
 				}
 			}
+			System.out.println("\n>>>> SecureAdditionServer: CLOSING CONNECTION ");
 			incoming.close();
 		}
 		catch( Exception x ) {
@@ -85,7 +86,7 @@ public class SecureAdditionServer {
 			x.printStackTrace();
 		}
 	}
-    private void handleUpload() {
+  private void handleUpload() {
 			try{
 				String str;
 				PrintWriter writer = new PrintWriter("uploads/" + in.readLine(), "UTF-8");
@@ -97,7 +98,37 @@ public class SecureAdditionServer {
 			catch (IOException e){
 					System.out.println(e);
 			}
-}
+	}
+	private void handleDownload() {
+			try{
+				File file = new File("uploads/" + in.readLine());
+				BufferedReader br = new BufferedReader(new FileReader(file));
+				String st;
+				while ((st = br.readLine()) != null)
+				{
+					out.println(st);
+				}
+				out.println ( "cmd:download_complete" );
+			}
+			catch (IOException e){
+					System.out.println(e);
+			}
+	}
+	private void handleDelete(){
+		try{
+			File file = new File("uploads/" + in.readLine());
+			if(file.exists()){
+				file.delete();
+				out.println("File deleted");
+			}
+			else{
+				out.println("File doesn't exist");
+			}
+		}
+		catch(IOException e){
+			System.out.println(e);
+		}
+	}
 
 
 	/** The test method for the class
